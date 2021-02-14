@@ -1,19 +1,37 @@
 FROM ubuntu:16.04
 
-MAINTAINER Mitch Allen "docker@mitchallen.com"
+MAINTAINER Shawn Wallis "shawn.p.wallis@gmail.com"
 
-# USAGE: docker run -it -v ~/raspberry/hello:/build mitchallen/pi-cross-compile
+ARG APT_PACKAGES="""\
+    build-essential \
+    gcc-5-arm-linux-gnueabi \
+    gcc-arm-linux-gnueabihf \
+    git \
+    wget \
+"""
 
-LABEL com.mitchallen.pi-cross-compile="{\"Description\":\"Cross Compile for Raspberry Pi\",\"Usage\":\"docker run -it -v ~/myprojects/mybuild:/build mitchallen/pi-cross-compile\",\"Version\":\"0.1.0\"}"
+RUN apt-get update -y && \
+    apt-get install -y ${APT_PACKAGES}
 
-RUN apt-get update && apt-get install -y git && apt-get install -y build-essential
+RUN git clone --progress https://github.com/raspberrypi/tools.git --depth=1 pitools
 
-RUN git clone --progress --verbose https://github.com/raspberrypi/tools.git --depth=1 pitools
+# CMD ["/bin/bash", "-c", "make", "-f", "${BUILD_FOLDER}/Makefile"]
 
+ARG GO_VERSION=1.13.9
+ARG TINYGO_VERSION=0.12.0
 
-ENV BUILD_FOLDER /build
+# Install Go
+RUN wget https://dl.google.com/go/go${GO_VERSION}.linux-armv6l.tar.gz
+RUN tar -xvzf go${GO_VERSION}.linux-armv6l.tar.gz -C ${HOME}
 
-WORKDIR ${BUILD_FOLDER}
+ENV GOROOT=${HOME}/go
+ENV PATH=${PATH}:${GOROOT}/bin
 
-CMD ["/bin/bash", "-c", "make", "-f", "${BUILD_FOLDER}/Makefile"]
-# CMD ["make", "clean"]
+# Install TinyGo
+#RUN wget https://github.com/tinygo-org/tinygo/releases/download/v${TINYGO_VERSION}/tinygo_${TINYGO_VERSION}_armhf.deb
+#RUN dpkg -i tinygo_${TINYGO_VERSION}_armhf.deb
+
+#ENV PATH=${PATH}:/usr/local/tinygo/bin
+
+RUN go version
+#RUN go version && tinygo version
